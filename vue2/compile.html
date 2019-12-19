@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <input type="text" id="a" v-model="text" />
+      {{text}}
+    </div>
+    <script src="./watcher.js"></script>
+    <script type="text/javascript">
+      function Compile(node, vm) {
+        if (node) {
+          this.$frag = this.nodeToFragment(node, vm)
+          return this.$frag
+        }
+      }
+      Compile.prototype = {
+        nodeToFragment: function(node, vm) {
+          var self = this
+          var frag = document.createDocumentFragment()
+          var child
+          while ((child = node.firstChild)) {
+            self.compileElement(child, vm)
+            frag.append(child)
+          }
+          return frag
+        },
+        compileElement: function(node, vm) {
+          var reg = /\{\{(.*)\}\}/
+
+          // attr
+          if (node.nodeType === 1) {
+            var attr = node.attributes
+            for (var i = 0; i < attr.length; i++) {
+              if (attr[i].nodeName === 'v-model') {
+                var name = attr[i].nodeValue
+                node.addEventListener('input', function(e) {
+                  vm[name] = e.target.value
+                })
+                // node.value = vm[name]
+                // node.removeAttribute('v-model')
+                new Watcher(vm, node, name, 'value')
+              }
+            }
+          }
+
+          // text
+          if (node.nodeType === 3) {
+            if (reg.test(node.nodeValue)) {
+              var name = RegExp.$1 // get str
+              name = name.trim()
+              // node.nodeValue = vm[name]
+              new Watcher(vm, node, name, 'nodeValue')
+            }
+          }
+        }
+      }
+
+      // 订阅者
+      function observe(obj, vm) {
+        Object.keys(obj).forEach(function(key) {
+          defineReactive(vm, key, obj[key])
+        })
+      }
+
+      // 数据劫持
+      function defineReactive(obj, key, val) {
+        var dep = new Dep() //  收集器
+        Object.defineProperty(obj, key, {
+          get: function() {
+            if (Dep.target) {
+              dep.addSub(Dep.target)
+            }
+            return val
+          },
+          set: function(newVal) {
+            val = newVal
+            // sub
+            dep.notify()
+          }
+        })
+      }
+
+      function Vue(options) {
+        this.data = options.data
+        var data = this.data
+        observe(data, this)
+        var id = options.el
+        var dom = new Compile(document.getElementById(id), this)
+        document.getElementById(id).appendChild(dom)
+      }
+
+      var vm = new Vue({
+        el: 'app',
+        data: {
+          text: 'hello world'
+        }
+      })
+    </script>
+  </body>
+</html>
