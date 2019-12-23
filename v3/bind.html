@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <input id="input" type="text" />
+      <span id="b"></span>
+    </div>
+    <script>
+      var obj = {}
+      const text = document.getElementById('input')
+      const p = document.getElementById('b')
+      const newObj = new Proxy(obj, {
+        get: function(target, key) {
+          return Reflect.get(target, key)
+        },
+        set: function(target, key, val) {
+          if (key === 'text') {
+            text.value = val
+            p.innerHTML = val
+          }
+          return Reflect.set(target, key, val)
+        }
+      })
+      input.addEventListener('keyup', function(e) {
+        newObj.text = e.target.value
+      })
+    </script>
+  </body>
+</html>
